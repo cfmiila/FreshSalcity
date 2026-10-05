@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Novo cliente</h2>
+  <a href="{{ url_for('clientes') }}" class="btn btn-outline">Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" required>
+      </div>
+      <div class="form-group">
+        <label for="whatsapp">WhatsApp</label>
+        <input type="text" id="whatsapp" name="whatsapp" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email">
+      </div>
+      <div class="form-group">
+        <label for="data_cadastro">Data de cadastro</label>
+        <input type="date" id="data_cadastro" name="data_cadastro" value="{{ today }}">
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top: 24px;">
+      <div></div>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

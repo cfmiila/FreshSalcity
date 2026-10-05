@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Estoque</h2>
+  <a href="{{ url_for('peca_nova') }}" class="btn btn-primary">+ Nova peça</a>
+</div>
+
+{% if alertas %}
+<div class="alert-bar">
+  Há {{ alertas|length }} peça(s) parada(s) há mais de 60 dias.
+</div>
+{% endif %}
+
+<form method="get" class="search-bar">
+  <input type="text" name="q" value="{{ busca }}" placeholder="Buscar por descrição, marca, número ou categoria">
+  <select name="status">
+    <option value="">Todos os status</option>
+    <option value="disponivel" {% if status_atual == 'disponivel' %}selected{% endif %}>Disponível</option>
+    <option value="curadoria" {% if status_atual == 'curadoria' %}selected{% endif %}>Curadoria</option>
+    <option value="desconto" {% if status_atual == 'desconto' %}selected{% endif %}>Desconto</option>
+    <option value="perda" {% if status_atual == 'perda' %}selected{% endif %}>Perda</option>
+    <option value="vendida" {% if status_atual == 'vendida' %}selected{% endif %}>Vendida</option>
+  </select>
+  <button type="submit" class="btn btn-outline">Filtrar</button>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Foto</th>
+        <th>Nº</th>
+        <th>Categoria</th>
+        <th>Descrição</th>
+        <th>Marca</th>
+        <th>Cor</th>
+        <th>Tamanho</th>
+        <th>Preço</th>
+        <th>Status</th>
+        <th>Entrada</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for peca in pecas %}
+      <tr class="{{ 'row-parada' if peca in alertas else '' }}">
+        <td>
+          {% if peca.foto %}
+          <img src="{{ peca.foto }}" alt="Peça {{ peca.numero_peca }}" class="foto-peca">
+          {% endif %}
+        </td>
+        <td>{{ peca.numero_peca }}</td>
+        <td>{{ peca.categoria }}</td>
+        <td>{{ peca.descricao or '-' }}</td>
+        <td>{{ peca.marca }}</td>
+        <td>{{ peca.cor }}</td>
+        <td>{{ peca.tamanho }}</td>
+        <td>R$ {{ '%.2f'|format(peca.preco_venda) }}</td>
+        <td><span class="badge {{ status_badge(peca.status) }}">{{ peca.status }}</span></td>
+        <td>{{ peca.data_entrada }}</td>
+        <td>
+          <a href="{{ url_for('peca_editar', peca_id=peca.id) }}" class="btn btn-outline">Editar</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="11">Nenhuma peça encontrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

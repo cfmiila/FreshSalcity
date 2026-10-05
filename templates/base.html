@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>Fresh SalCity</title>
+</head>
+<body>
+  {% if request.endpoint != 'login' %}
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Fresh Salcity">
+      </div>
+      <nav>
+        <a href="/" class="nav-link {{ 'active' if request.endpoint=='dashboard' }}">Dashboard</a>
+        <a href="/estoque" class="nav-link {{ 'active' if request.endpoint=='estoque' or request.endpoint=='peca_nova' or request.endpoint=='peca_editar' }}">Estoque</a>
+        <a href="/clientes" class="nav-link {{ 'active' if request.endpoint=='clientes' or request.endpoint=='cliente_novo' }}">Clientes</a>
+        <a href="/vendas" class="nav-link {{ 'active' if request.endpoint=='vendas' or request.endpoint=='venda_nova' or request.endpoint=='troca' or request.endpoint=='trocas_redirect' }}">Vendas</a>
+        <a href="/relatorios" class="nav-link {{ 'active' if request.endpoint=='relatorios' }}">Relatórios</a>
+        <a href="{{ url_for('logout') }}" class="nav-link">Sair</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="wave-bar"></div>
+      <div class="main-content">
+  {% endif %}
+  {% if request.endpoint != 'login' %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert-bar {{ 'alert-error' if category == 'error' else 'alert-success' }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+  {% endif %}
+  {% block content %}{% endblock %}
+  {% if request.endpoint != 'login' %}
+      </div>
+    </main>
+  </div>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Dashboard</h2>
+</div>
+
+<div class="cards-row">
+  <div class="metric metric-accent">
+    <div class="metric-label">Peças no estoque</div>
+    <div class="metric-val">{{ total_pecas }}</div>
+    <div class="metric-sub">{{ total_disponiveis }} disponíveis</div>
+  </div>
+  <div class="metric metric-accent">
+    <div class="metric-label">Vendidas</div>
+    <div class="metric-val">{{ total_vendidas }}</div>
+    <div class="metric-sub">Hoje no sistema</div>
+  </div>
+  <div class="metric metric-accent">
+    <div class="metric-label">Clientes</div>
+    <div class="metric-val">{{ total_clientes }}</div>
+    <div class="metric-sub">Cadastrados</div>
+  </div>
+  <div class="metric metric-accent">
+    <div class="metric-label">Faturamento</div>
+    <div class="metric-val">R$ {{ '%.2f'|format(faturamento) }}</div>
+    <div class="metric-sub">Ticket médio: R$ {{ '%.2f'|format(ticket_medio) }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom: 16px;">Distribuição por categoria</h3>
+  {% for item in categorias %}
+  <div class="bar-row">
+    <div class="bar-label">{{ item.nome }}</div>
+    <div class="bar-track">
+      <div class="bar-fill" style="width: {{ ((item.total / categoria_max) * 100) if categoria_max else 0 }}%"></div>
+    </div>
+    <div class="bar-val">{{ item.total }}</div>
+  </div>
+  {% else %}
+  <p>Nenhuma categoria encontrada.</p>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom: 14px;">Peças paradas há mais de 60 dias</h3>
+  {% if pecas_paradas %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nº</th>
+          <th>Categoria</th>
+          <th>Descrição</th>
+          <th>Entrada</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for peca in pecas_paradas %}
+        <tr>
+          <td>{{ peca.numero_peca }}</td>
+          <td>{{ peca.categoria }}</td>
+          <td>{{ peca.descricao or '-' }}</td>
+          <td>{{ peca.data_entrada }}</td>
+          <td><span class="badge b-desconto">{{ peca.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Sem peças em alerta neste momento.</p>
+  {% endif %}
+</div>
+{% endblock %}

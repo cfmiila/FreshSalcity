@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Nova venda</h2>
+  <a href="{{ url_for('vendas') }}" class="btn btn-outline">Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="cliente_id">Cliente</label>
+        <select id="cliente_id" name="cliente_id" required>
+          <option value="">Selecione</option>
+          {% for cliente in clientes %}
+          <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="data_venda">Data da venda</label>
+        <input type="date" id="data_venda" name="data_venda" value="{{ today }}">
+      </div>
+      <div class="form-group">
+        <label for="tipo_frete">Frete</label>
+        <select id="tipo_frete" name="tipo_frete">
+          <option value="correios">Correios</option>
+          <option value="local_ssa">Entrega local SSA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="valor_frete">Valor do frete</label>
+          <input type="number" step="0.01" min="0" id="valor_frete" name="valor_frete" value="0">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Peças disponíveis</label>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Selecionar</th>
+                <th>Nº</th>
+                <th>Descrição</th>
+                <th>Preço</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for peca in pecas_disponiveis %}
+              <tr>
+                <td><input type="checkbox" name="peca_ids" value="{{ peca.id }}"></td>
+                <td>{{ peca.numero_peca }}</td>
+                <td>{{ peca.descricao or peca.marca }}</td>
+                <td>R$ {{ '%.2f'|format(peca.preco_venda) }}<input type="hidden" name="preco_{{ peca.id }}" value="{{ peca.preco_venda }}"></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4">Nenhuma peça disponível.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes"></textarea>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top: 24px;">
+      <div></div>
+      <button type="submit" class="btn btn-primary">Salvar venda</button>
+    </div>
+  </form>
+</div>
+<script>
+  const tipoFrete = document.getElementById('tipo_frete');
+  const valorFrete = document.getElementById('valor_frete');
+  tipoFrete.addEventListener('change', () => {
+    const local = tipoFrete.value === 'local_ssa';
+    valorFrete.readOnly = local;
+    if (local) valorFrete.value = '{{ config.TAXA_LOCAL_SSA|default("30", true) }}';
+  });
+</script>
+{% endblock %}

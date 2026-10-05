@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">{% if peca %}Editar peça{% else %}Nova peça{% endif %}</h2>
+  <a href="{{ url_for('estoque') }}" class="btn btn-outline">Voltar ao estoque</a>
+</div>
+
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="numero_peca">Número da peça</label>
+        <input type="number" id="numero_peca" name="numero_peca" value="{{ peca.numero_peca if peca else '' }}" placeholder="Auto">
+      </div>
+      <div class="form-group">
+        <label for="categoria_id">Categoria</label>
+        <select id="categoria_id" name="categoria_id" required>
+          {% for categoria in categorias %}
+          <option value="{{ categoria.id }}" {% if peca and peca.categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="descricao">Descrição</label>
+        <input type="text" id="descricao" name="descricao" value="{{ peca.descricao if peca else '' }}">
+      </div>
+      <div class="form-group">
+        <label for="marca">Marca</label>
+        <input type="text" id="marca" name="marca" value="{{ peca.marca if peca else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="cor">Cor</label>
+        <input type="text" id="cor" name="cor" value="{{ peca.cor if peca else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="tamanho">Tamanho</label>
+        <input type="text" id="tamanho" name="tamanho" value="{{ peca.tamanho if peca else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="estado_conservacao">Estado de conservação</label>
+        <input type="text" id="estado_conservacao" name="estado_conservacao" value="{{ peca.estado_conservacao if peca else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="disponivel" {% if peca and peca.status == 'disponivel' %}selected{% endif %}>Disponível</option>
+          <option value="curadoria" {% if peca and peca.status == 'curadoria' %}selected{% endif %}>Curadoria</option>
+          <option value="desconto" {% if peca and peca.status == 'desconto' %}selected{% endif %}>Desconto</option>
+          <option value="perda" {% if peca and peca.status == 'perda' %}selected{% endif %}>Perda</option>
+          <option value="vendida" {% if peca and peca.status == 'vendida' %}selected{% endif %}>Vendida</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="preco_custo">Preço de custo</label>
+        <input type="number" step="0.01" min="0" id="preco_custo" name="preco_custo" value="{{ peca.preco_custo if peca else '0' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="preco_venda">Preço de venda</label>
+        <input type="number" step="0.01" min="0" id="preco_venda" name="preco_venda" value="{{ peca.preco_venda if peca else '0' }}" required>
+      </div>
+      <div class="form-group">
+        <label for="data_entrada">Data de entrada</label>
+        <input type="date" id="data_entrada" name="data_entrada" value="{{ peca.data_entrada if peca else '' }}">
+      </div>
+      <div class="form-group">
+        <label for="foto">Foto</label>
+        <input type="file" id="foto" name="foto" accept="image/*">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes">{{ peca.observacoes if peca else '' }}</textarea>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top: 24px;">
+      <div></div>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

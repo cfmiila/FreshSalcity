@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Relatórios</h2>
+  <a href="{{ url_for('relatorio_pdf') }}" class="btn btn-primary" target="_blank">Exportar PDF</a>
+</div>
+
+<div class="cards-row">
+  <div class="metric metric-accent">
+    <div class="metric-label">Total de vendas</div>
+    <div class="metric-val">{{ total_vendas }}</div>
+    <div class="metric-sub">Registro de operações</div>
+  </div>
+  <div class="metric metric-accent">
+    <div class="metric-label">Faturamento</div>
+    <div class="metric-val">R$ {{ '%.2f'|format(faturamento) }}</div>
+    <div class="metric-sub">Vendas realizadas</div>
+  </div>
+  <div class="metric metric-accent">
+    <div class="metric-label">Peça mais vendida</div>
+    <div class="metric-val">{{ peca_mais_vendida.numero_peca if peca_mais_vendida else '-' }}</div>
+    <div class="metric-sub">{{ peca_mais_vendida.descricao if peca_mais_vendida else 'Sem dados' }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom: 12px;">Resumo por categoria</h3>
+  {% for item in categorias %}
+  <div class="bar-row">
+    <div class="bar-label">{{ item.nome }}</div>
+    <div class="bar-track">
+      <div class="bar-fill" style="width: {{ item.total * 8 }}%"></div>
+    </div>
+    <div class="bar-val">{{ item.total }}</div>
+  </div>
+  {% else %}
+  <p>Sem dados de categoria.</p>
+  {% endfor %}
+</div>
+{% endblock %}

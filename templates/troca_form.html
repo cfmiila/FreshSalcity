@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Troca</h2>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="item_venda_id">Item vendido</label>
+        <select id="item_venda_id" name="item_venda_id" required>
+          <option value="">Selecione</option>
+          {% for item in itens_vendidos %}
+          <option value="{{ item.id }}">{{ item.numero_peca }} — {{ item.descricao }} — {{ item.cliente }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="data_devolucao">Data da devolução</label>
+        <input type="date" id="data_devolucao" name="data_devolucao" value="{{ today }}" required>
+      </div>
+      <div class="form-group">
+        <label for="peca_nova_id">Peça de troca</label>
+        <select id="peca_nova_id" name="peca_nova_id">
+          <option value="">Nenhuma peça</option>
+          {% for peca in pecas_disponiveis %}
+          <option value="{{ peca.id }}">{{ peca.numero_peca }} — {{ peca.descricao or peca.marca }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="diferenca_valor">Diferença de valor</label>
+        <input type="number" step="0.01" min="0" id="diferenca_valor" name="diferenca_valor" value="0">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" name="observacoes"></textarea>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top: 24px;">
+      <div></div>
+      <button type="submit" class="btn btn-primary">Registrar troca</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

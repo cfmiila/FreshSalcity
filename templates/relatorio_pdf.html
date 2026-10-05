@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório Fresh Sal City</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 36px; color: #1A1A1A; }
+    .top { border-bottom: 4px solid #FF2D9B; padding-bottom: 12px; margin-bottom: 24px; }
+    .brand { font-size: 26px; font-weight: bold; color: #FF2D9B; }
+    .muted { color: #666; font-size: 12px; }
+    .grid { display: flex; gap: 16px; margin-bottom: 20px; }
+    .box { border: 1px solid #ddd; border-radius: 8px; padding: 12px; flex: 1; }
+    .label { color: #666; font-size: 11px; text-transform: uppercase; }
+    .value { font-size: 22px; font-weight: bold; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+    th { background: #1A1A1A; color: white; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand">fresh sal city</div>
+    <div class="muted">Relatório gerado em {{ data_geracao }}</div>
+  </div>
+
+  <div class="grid">
+    <div class="box">
+      <div class="label">Total de vendas</div>
+      <div class="value">{{ total_vendas }}</div>
+    </div>
+    <div class="box">
+      <div class="label">Faturamento</div>
+      <div class="value">R$ {{ '%.2f'|format(faturamento) }}</div>
+    </div>
+    <div class="box">
+      <div class="label">Peça mais vendida</div>
+      <div class="value">{{ peca_mais_vendida.numero_peca if peca_mais_vendida else '-' }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Categoria</th>
+        <th>Quantidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in categorias %}
+      <tr>
+        <td>{{ item.nome }}</td>
+        <td>{{ item.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

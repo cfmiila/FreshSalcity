@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Clientes</h2>
+  <a href="{{ url_for('cliente_novo') }}" class="btn btn-primary">+ Novo cliente</a>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>WhatsApp</th>
+        <th>Email</th>
+        <th>Data de cadastro</th>
+        <th>Vendas</th>
+        <th>Ticket médio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cliente in clientes %}
+      <tr>
+        <td>{{ cliente.nome }}</td>
+        <td>{{ cliente.whatsapp }}</td>
+        <td>{{ cliente.email or '-' }}</td>
+        <td>{{ cliente.data_cadastro }}</td>
+        <td>{{ cliente.total_vendas }}</td>
+        <td>R$ {{ '%.2f'|format(cliente.ticket_medio) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Nenhum cliente cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

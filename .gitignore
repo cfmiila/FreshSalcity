@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+freshsalcity.db
+.env
+static/fotos/
+*.egg-info/
+dist/
+build/
+.DS_Store

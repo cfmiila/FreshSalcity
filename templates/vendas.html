@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Vendas</h2>
+  <a href="{{ url_for('venda_nova') }}" class="btn btn-primary">+ Nova venda</a>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Cliente</th>
+        <th>Data</th>
+        <th>Frete</th>
+        <th>Peças</th>
+        <th>Valor total</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for venda in vendas %}
+      <tr>
+        <td>{{ venda.id }}</td>
+        <td>{{ venda.cliente or 'Cliente não informado' }}</td>
+        <td>{{ venda.data_venda }}</td>
+        <td>{{ venda.tipo_frete }} · R$ {{ '%.2f'|format(venda.valor_frete) }}</td>
+        <td>{{ venda.total_pecas }}</td>
+        <td>R$ {{ '%.2f'|format(venda.valor_total) }}</td>
+        <td><span class="badge b-vendida">{{ venda.status_venda }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">Nenhuma venda registrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
