@@ -25,7 +25,7 @@
       </nav>
     </aside>
     <main class="main">
-      <div class="wave-bar"></div>
+      <div class="top-xadrez-header"></div>
       <div class="main-content">
   {% endif %}
   {% if request.endpoint != 'login' %}
@@ -41,5 +41,32 @@
     </main>
   </div>
   {% endif %}
+
+<div class="wave-footer">
+<svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+<path d="M0,0 C150,90 350,-40 500,60 C650,160 900,10 1200,40 L1200,120 L0,120 Z" fill="#80cbc4"></path>
+<path d="M0,20 C180,100 330,-20 520,70 C670,140 880,20 1200,50 L1200,120 L0,120 Z" fill="#90caf9"></path>
+<path d="M0,40 C200,110 310,0 540,80 C690,120 860,30 1200,60 L1200,120 L0,120 Z" fill="#ce93d8"></path>
+<path d="M0,60 C220,120 290,20 560,90 C710,100 840,40 1200,70 L1200,120 L0,120 Z" fill="#FF2D9B"></path>
+</svg>
+</div>
+<style>
+.wave-footer {
+position: fixed;
+bottom: 0;
+left: 0;
+width: 100%;
+overflow: hidden;
+line-height: 0;
+pointer-events: none;
+z-index: 10;
+}
+.wave-footer svg {
+position: relative;
+display: block;
+width: calc(100% + 1.3px);
+height: 60px;
+}
+</style>
 </body>
 </html>

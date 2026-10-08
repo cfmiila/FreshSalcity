@@ -8,6 +8,8 @@ load_dotenv()
 
 def get_db():
     conn = sqlite3.connect('freshsalcity.db')
+    # Ativa o suporte a Foreign Keys no SQLite
+    conn.execute("PRAGMA foreign_keys = ON;")
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -91,11 +93,11 @@ def init_db():
         INSERT OR IGNORE INTO categorias (nome) VALUES
             ('Vestidos'),
             ('Blusas'),
-            ('Calcas'),
+            ('Calças'),
             ('Saias'),
             ('Casacos'),
             ('Sapatos'),
-            ('Acessorios'),
+            ('Acessórios'),
             ('Outros');
 
     ''')
@@ -113,5 +115,90 @@ def init_db():
     print("Banco criado com sucesso!")
 
 
+def atualizar_cliente(id, nome, whatsapp, email):
+    conn = get_db()
+    conn.execute(
+        "UPDATE clientes SET nome = ?, whatsapp = ?, email = ? WHERE id = ?",
+        (nome, whatsapp, email, id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def migrar_db():
+    """Remove categorias duplicadas e reatribui as peças para as categorias acentuadas."""
+    conn = get_db()
+    c = conn.cursor()
+
+    
+    correcoes = [
+        ('Calcas', 'Calças'),
+        ('Acessorios', 'Acessórios')
+    ]
+
+    for antiga, nova in correcoes:
+       
+        c.execute("SELECT id FROM categorias WHERE nome = ?", (antiga,))
+        res_antiga = c.fetchone()
+        
+        c.execute("SELECT id FROM categorias WHERE nome = ?", (nova,))
+        res_nova = c.fetchone()
+
+        if res_antiga and res_nova:
+            id_antigo = res_antiga['id']
+            id_novo = res_nova['id']
+            c.execute("UPDATE pecas SET categoria_id = ? WHERE categoria_id = ?", (id_novo, id_antigo))
+            
+            c.execute("DELETE FROM categorias WHERE id = ?", (id_antigo,))
+
+        elif res_antiga and not res_nova:
+            
+            c.execute("UPDATE categorias SET nome = ? WHERE id = ?", (nova, res_antiga['id']))
+
+    # Remove as categorias extras, mantendo apenas as desejadas
+    categorias_desejadas = ['Calças', 'Saias', 'Acessórios', 'Blusas', 'Casacos']
+    c.execute("SELECT id, nome FROM categorias")
+    for row in c.fetchall():
+        if row['nome'] not in categorias_desejadas:
+            # Reatribua peças com categoria que será removida para NULL ou uma categoria padrão, se desejado
+            c.execute("UPDATE pecas SET categoria_id = NULL WHERE categoria_id = ?", (row['id'],))
+            c.execute("DELETE FROM categorias WHERE id = ?", (row['id'],))
+    conn.commit()
+    conn.close()
+    print("Limpeza de duplicadas realizada com sucesso!")
+
+
+def atualizar_venda(venda_id, cliente_id, data_venda, tipo_frete, valor_frete, status_venda, observacoes):
+    conn = get_db()
+    conn.execute(
+        "UPDATE vendas SET cliente_id=?, data_venda=?, tipo_frete=?, valor_frete=?, status_venda=?, observacoes=? WHERE id=?",
+        (cliente_id, data_venda, tipo_frete, valor_frete, status_venda, observacoes, venda_id)
+    )
+    conn.commit()
+    conn.close()
+    
+def buscar_venda_por_id(venda_id):
+    """Busca uma venda específica pelo ID."""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM vendas WHERE id = ?", (venda_id,))
+    venda = c.fetchone()
+    conn.close()
+    return venda
+
+def deletar_cliente(id):
+    conn = get_db()
+    conn.execute("UPDATE vendas SET cliente_id = NULL WHERE cliente_id = ?", (id,))
+    conn.execute("DELETE FROM clientes WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+
+def deletar_peca(id):
+    conn = get_db()
+    conn.execute("DELETE FROM pecas WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+
 if __name__ == '__main__':
     init_db()
+    migrar_db()

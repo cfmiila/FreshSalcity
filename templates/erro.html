@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto; padding: 20px; text-align: center;">
+    <div style="background-color: #fff3f3; border: 1px solid #ffcdd2; border-radius: 8px; padding: 24px;">
+        <h2 style="color: #d32f2f; margin-top: 0;">Ocorreu um problema</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p style="font-size: 1.1em; color: #333;">{{ message }}</p>
+                {% endfor %}
+            {% else %}
+                <p style="font-size: 1.1em; color: #333;">Não foi possível processar a sua solicitação no momento.</p>
+            {% endif %}
+        {% endwith %}
+
+        <div style="margin-top: 24px;">
+            <a href="javascript:history.back()" style="margin-right: 10px; text-decoration: none; padding: 10px 16px; background-color: #666; color: white; border-radius: 4px; display: inline-block;">Voltar</a>
+            <a href="/" style="text-decoration: none; padding: 10px 16px; background-color: #007bff; color: white; border-radius: 4px; display: inline-block;">Ir para o Início</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

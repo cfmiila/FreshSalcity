@@ -58,8 +58,11 @@
         <td>R$ {{ '%.2f'|format(peca.preco_venda) }}</td>
         <td><span class="badge {{ status_badge(peca.status) }}">{{ peca.status }}</span></td>
         <td>{{ peca.data_entrada }}</td>
-        <td>
+                <td>
           <a href="{{ url_for('peca_editar', peca_id=peca.id) }}" class="btn btn-outline">Editar</a>
+          <form method="post" action="{{ url_for('deletar_peca_route', id=peca.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta peça?');">
+            <button type="submit" class="btn btn-danger">Excluir</button>
+          </form>
         </td>
       </tr>
       {% else %}

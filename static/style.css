@@ -34,16 +34,15 @@ body {
 .nav-link:hover  { color: #fff; background: rgba(255, 45, 155, 0.15); }
 .nav-link.active { color: #fff; border-left-color: #FF2D9B; background: #FF2D9B; }
 
-.wave-bar {
+.top-xadrez-header {
   width: 100%;
-  height: 52px;
-  background-image: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%);
-  background-size: 32px 32px;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  margin-bottom: 24px;
+  height: 40px;
+  background-image: url("/static/xadrez.png");
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  margin-bottom: 20px;
 }
+
 
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .page-title  { font-size: 18px; font-weight: 500; }

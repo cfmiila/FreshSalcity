@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-  <h2 class="page-title">Novo cliente</h2>
+  <h2 class="page-title">{{ 'Editar cliente' if edicao else 'Novo cliente' }}</h2>
   <a href="{{ url_for('clientes') }}" class="btn btn-outline">Voltar</a>
 </div>
 
@@ -10,19 +10,19 @@
     <div class="form-grid">
       <div class="form-group">
         <label for="nome">Nome</label>
-        <input type="text" id="nome" name="nome" required>
+        <input type="text" id="nome" name="nome" required value="{{ cliente.nome if cliente else '' }}">
       </div>
       <div class="form-group">
         <label for="whatsapp">WhatsApp</label>
-        <input type="text" id="whatsapp" name="whatsapp" required>
+        <input type="text" id="whatsapp" name="whatsapp" required value="{{ cliente.whatsapp if cliente else '' }}">
       </div>
       <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" name="email">
+        <input type="email" id="email" name="email" value="{{ cliente.email if cliente else '' }}">
       </div>
       <div class="form-group">
         <label for="data_cadastro">Data de cadastro</label>
-        <input type="date" id="data_cadastro" name="data_cadastro" value="{{ today }}">
+        <input type="date" id="data_cadastro" name="data_cadastro" value="{{ today }}" {% if edicao %}readonly{% endif %}>
       </div>
     </div>
 

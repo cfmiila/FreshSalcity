@@ -18,10 +18,6 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-try:
-    from weasyprint import HTML
-except (ImportError, OSError):
-    HTML = None
 
 from database import init_db
 
@@ -35,9 +31,10 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def get_db():
     if 'db' not in g:
-        conn = sqlite3.connect(app.config['DATABASE'])
+        conn = sqlite3.connect(app.config['DATABASE'], timeout=10)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA foreign_keys = ON')
+        conn.execute('PRAGMA journal_mode = WAL')  # Melhor manuseio concorrência sqlite
         g.db = conn
     return g.db
 
@@ -150,18 +147,13 @@ def dashboard():
     total_disponiveis = db.execute("SELECT COUNT(*) AS total FROM pecas WHERE status = 'disponivel'").fetchone()['total']
     total_vendidas = db.execute("SELECT COUNT(*) AS total FROM pecas WHERE status = 'vendida'").fetchone()['total']
     total_clientes = db.execute('SELECT COUNT(*) AS total FROM clientes').fetchone()['total']
-    faturamento = db.execute('SELECT COALESCE(SUM(preco_vendido), 0) AS total FROM itens_venda').fetchone()['total']
-    ticket_medio = db.execute(
-        """
-        SELECT COALESCE(ROUND(AVG(total_venda), 2), 0)
-        FROM (
-            SELECT SUM(iv.preco_vendido) AS total_venda
-            FROM vendas v
-            LEFT JOIN itens_venda iv ON iv.venda_id = v.id
-            GROUP BY v.id
-        )
-        """
-    ).fetchone()[0]
+    faturamento = db.execute('''
+        SELECT 
+          COALESCE(SUM(iv.preco_vendido), 0) + COALESCE(SUM(v.valor_frete), 0) AS total
+        FROM vendas v
+        JOIN itens_venda iv ON v.id = iv.venda_id
+        WHERE v.status_venda != 'cancelada'
+    ''').fetchone()['total']
 
     categorias = db.execute(
         """
@@ -192,7 +184,6 @@ def dashboard():
         total_vendidas=total_vendidas,
         total_clientes=total_clientes,
         faturamento=faturamento,
-        ticket_medio=ticket_medio,
         categorias=categorias,
         categoria_max=categoria_max,
         pecas_paradas=pecas_paradas,
@@ -333,17 +324,14 @@ def clientes():
     clientes_lista = db.execute(
         '''
         SELECT c.*,
-            (SELECT COUNT(*) FROM vendas v WHERE v.cliente_id = c.id) AS total_vendas,
-            COALESCE((
-                SELECT ROUND(AVG(total_venda), 2)
-                FROM (
-                    SELECT SUM(iv.preco_vendido) AS total_venda
-                    FROM vendas v2
-                    LEFT JOIN itens_venda iv ON iv.venda_id = v2.id
-                    WHERE v2.cliente_id = c.id
-                    GROUP BY v2.id
-                )
-            ), 0) AS ticket_medio
+            (
+                SELECT COUNT(*)
+                FROM vendas v
+                JOIN itens_venda iv ON iv.venda_id = v.id
+                JOIN pecas p ON p.id = iv.peca_id
+                WHERE v.cliente_id = c.id
+                AND p.status = 'vendida'
+            ) AS total_vendas
         FROM clientes c
         ORDER BY c.nome ASC
         '''
@@ -368,7 +356,42 @@ def cliente_novo():
         db.commit()
         return redirect(url_for('clientes'))
 
-    return render_template('cliente_form.html', cliente=None, today=date.today().isoformat())
+    return render_template('cliente_form.html', cliente=None, today=date.today().isoformat(), edicao=False)
+
+@app.route('/clientes/deletar/<int:id>', methods=['POST'])
+@login_required
+def deletar_cliente_route(id):
+    import sqlite3
+    from database import deletar_cliente
+    try:
+        deletar_cliente(id)
+        flash('Cliente excluído com sucesso!', 'success')
+    except sqlite3.IntegrityError:
+        flash('Não foi possível excluir o cliente pois ele possui registros vinculados.', 'error')
+    return redirect(url_for('clientes'))
+
+@app.route('/clientes/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def cliente_editar(id):
+    db = get_db()
+    cliente = db.execute("SELECT * FROM clientes WHERE id = ?", (id,)).fetchone()
+    if not cliente:
+        flash('Cliente não encontrado.', 'error')
+        return redirect(url_for('clientes'))
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        whatsapp = request.form.get('whatsapp', '').strip()
+        email = request.form.get('email', '').strip()
+        from database import atualizar_cliente
+        try:
+            atualizar_cliente(id, nome, whatsapp, email)
+            db.commit()
+            flash('Cliente atualizado com sucesso.', 'success')
+            return redirect(url_for('clientes'))
+        except sqlite3.IntegrityError:
+            db.rollback()
+            flash('Erro ao atualizar cliente. Dados duplicados?', 'error')
+    return render_template('cliente_form.html', cliente=cliente, today=cliente['data_cadastro'] if cliente else None, edicao=True)
 
 
 @app.route('/vendas')
@@ -389,6 +412,31 @@ def vendas():
     ).fetchall()
     return render_template('vendas.html', vendas=vendas_lista)
 
+
+@app.route('/vendas/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def venda_editar(id):
+    from database import atualizar_venda
+    db = get_db()
+    venda = db.execute("SELECT * FROM vendas WHERE id = ?", (id,)).fetchone()
+    clientes = db.execute("SELECT * FROM clientes ORDER BY nome").fetchall()
+    if not venda:
+        flash('Venda não encontrada.', 'error')
+        return redirect(url_for('vendas'))
+    if request.method == 'POST':
+        try:
+            cliente_id = request.form.get('cliente_id')
+            data_venda = request.form.get('data_venda')
+            tipo_frete = request.form.get('tipo_frete')
+            valor_frete = float(request.form.get('valor_frete', 0) or 0)
+            status_venda = request.form.get('status_venda')
+            observacoes = request.form.get('observacoes', '').strip()
+            atualizar_venda(id, cliente_id, data_venda, tipo_frete, valor_frete, status_venda, observacoes)
+            flash('Venda atualizada com sucesso!', 'success')
+            return redirect(url_for('vendas'))
+        except sqlite3.Error:
+            flash('Erro ao atualizar a venda.', 'error')
+    return render_template('venda_form.html', venda=venda, clientes=clientes, edicao=True)
 
 @app.route('/vendas/nova', methods=['GET', 'POST'])
 @login_required
@@ -506,12 +554,30 @@ def trocas_redirect():
     return redirect(url_for('troca'))
 
 
+@app.route('/estoque/deletar/<int:id>', methods=['POST'])
+@login_required
+def deletar_peca_route(id):
+    from database import deletar_peca
+    import sqlite3
+    try:
+        deletar_peca(id)
+        flash('Peça excluída com sucesso!', 'success')
+    except sqlite3.Error:
+        flash('Não foi possível excluir esta peça. Verifique se ela está vinculada a uma venda ou movimento.', 'error')
+    return redirect(url_for('estoque'))
+
 @app.route('/relatorios')
 @login_required
 def relatorios():
     db = get_db()
     total_vendas = db.execute('SELECT COUNT(*) AS total FROM vendas').fetchone()['total']
-    faturamento = db.execute('SELECT COALESCE(SUM(preco_vendido), 0) AS total FROM itens_venda').fetchone()['total']
+    faturamento = db.execute('''
+        SELECT 
+          COALESCE(SUM(iv.preco_vendido), 0) + COALESCE(SUM(v.valor_frete), 0) AS total
+        FROM vendas v
+        JOIN itens_venda iv ON v.id = iv.venda_id
+        WHERE v.status_venda != 'cancelada'
+    ''').fetchone()['total']
     peca_mais_vendida = db.execute(
         '''
         SELECT p.numero_peca, p.descricao, COUNT(iv.id) AS quantidade
@@ -541,52 +607,29 @@ def relatorios():
     )
 
 
-@app.route('/relatorios/pdf')
-@login_required
-def relatorio_pdf():
-    if HTML is None:
-        flash('A exportação PDF requer as bibliotecas nativas do WeasyPrint.', 'error')
-        return redirect(url_for('relatorios'))
-
-    db = get_db()
-    total_vendas = db.execute('SELECT COUNT(*) AS total FROM vendas').fetchone()['total']
-    faturamento = db.execute('SELECT COALESCE(SUM(preco_vendido), 0) AS total FROM itens_venda').fetchone()['total']
-    peca_mais_vendida = db.execute(
-        '''
-        SELECT p.numero_peca, p.descricao, COUNT(iv.id) AS quantidade
-        FROM itens_venda iv
-        JOIN pecas p ON p.id = iv.peca_id
-        GROUP BY p.id, p.numero_peca, p.descricao
-        ORDER BY quantidade DESC, p.numero_peca ASC
-        LIMIT 1
-        '''
-    ).fetchone()
-    categorias = db.execute(
-        '''
-        SELECT c.nome, COUNT(p.id) AS total
-        FROM categorias c
-        LEFT JOIN pecas p ON p.categoria_id = c.id
-        GROUP BY c.id, c.nome
-        ORDER BY total DESC
-        '''
-    ).fetchall()
-
-    html = render_template(
-        'relatorio_pdf.html',
-        total_vendas=total_vendas,
-        faturamento=faturamento,
-        peca_mais_vendida=peca_mais_vendida,
-        categorias=categorias,
-        data_geracao=date.today().isoformat(),
-    )
-    pdf_bytes = HTML(string=html).write_pdf()
-    return send_file(BytesIO(pdf_bytes), mimetype='application/pdf', as_attachment=True, download_name='relatorio_fresh_sal_city.pdf')
-
 
 @app.route('/health')
 def health():
     return {'status': 'ok'}
 
+
+# Error Handlers globais Flask (conforme diretriz)
+@app.errorhandler(sqlite3.IntegrityError)
+def handle_integrity_error(e):
+    flash('Operação inválida. Dados duplicados, inexistentes ou violação de restrição.', 'error')
+    return render_template('erro.html', erro=e), 400
+
+@app.errorhandler(ValueError)
+def handle_value_error(e):
+    flash('Valor informado inconsistente/fora do permitido.', 'error')
+    return render_template('erro.html', erro=e), 400
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    print('Erro interno:', traceback.format_exc())
+    flash('Erro interno inesperado. Tente novamente e, se persistir, contate o suporte.', 'error')
+    return render_template('erro.html', erro='Erro interno.'), 500
 
 if __name__ == '__main__':
     init_db()

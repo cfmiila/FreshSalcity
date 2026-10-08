@@ -1,37 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="page-header">
-  <h2 class="page-title">Nova venda</h2>
+  <h2 class="page-title">{% if edicao %}Editar venda #{{ venda.id }}{% else %}Nova venda{% endif %}</h2>
   <a href="{{ url_for('vendas') }}" class="btn btn-outline">Voltar</a>
 </div>
 
 <div class="card">
   <form method="post">
     <div class="form-grid">
+      
+      <!-- Cliente -->
       <div class="form-group">
         <label for="cliente_id">Cliente</label>
         <select id="cliente_id" name="cliente_id" required>
           <option value="">Selecione</option>
           {% for cliente in clientes %}
-          <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+          <option value="{{ cliente.id }}" {% if edicao and venda.cliente_id == cliente.id %}selected{% endif %}>
+            {{ cliente.nome }}
+          </option>
           {% endfor %}
         </select>
       </div>
+
+      <!-- Data da Venda -->
       <div class="form-group">
         <label for="data_venda">Data da venda</label>
-        <input type="date" id="data_venda" name="data_venda" value="{{ today }}">
+        <input type="date" id="data_venda" name="data_venda" value="{% if edicao %}{{ venda.data_venda }}{% else %}{{ today }}{% endif %}" required>
       </div>
+
+      <!-- Tipo de Frete -->
       <div class="form-group">
         <label for="tipo_frete">Frete</label>
         <select id="tipo_frete" name="tipo_frete">
-          <option value="correios">Correios</option>
-          <option value="local_ssa">Entrega local SSA</option>
+          <option value="correios" {% if edicao and venda.tipo_frete == 'correios' %}selected{% endif %}>Correios</option>
+          <option value="local_ssa" {% if edicao and venda.tipo_frete == 'local_ssa' %}selected{% endif %}>Entrega local SSA</option>
         </select>
       </div>
+
+      <!-- Valor do Frete -->
       <div class="form-group">
         <label for="valor_frete">Valor do frete</label>
-          <input type="number" step="0.01" min="0" id="valor_frete" name="valor_frete" value="0">
+        <input type="number" step="0.01" min="0" id="valor_frete" name="valor_frete" value="{% if edicao %}{{ venda.valor_frete }}{% else %}0{% endif %}">
       </div>
+
+      <!-- Status da Venda (Exibido na edição) -->
+      {% if edicao %}
+      <div class="form-group">
+        <label for="status_venda">Status da venda</label>
+        <select id="status_venda" name="status_venda">
+          <option value="pendente" {% if venda.status_venda == 'pendente' %}selected{% endif %}>Pendente</option>
+          <option value="concluido" {% if venda.status_venda in ['concluido', 'concluida'] %}selected{% endif %}>Concluído</option>
+          <option value="cancelado" {% if venda.status_venda in ['cancelado', 'cancelada'] %}selected{% endif %}>Cancelado</option>
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Tabela de Peças Disponíveis (Apenas ao criar nova venda) -->
+      {% if not edicao %}
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>Peças disponíveis</label>
         <div class="table-wrap">
@@ -59,25 +84,34 @@
           </table>
         </div>
       </div>
+      {% endif %}
+
+      <!-- Observações -->
       <div class="form-group" style="grid-column: 1 / -1;">
         <label for="observacoes">Observações</label>
-        <textarea id="observacoes" name="observacoes"></textarea>
+        <textarea id="observacoes" name="observacoes">{% if edicao %}{{ venda.observacoes or '' }}{% endif %}</textarea>
       </div>
+
     </div>
 
     <div class="page-header" style="margin-top: 24px;">
       <div></div>
-      <button type="submit" class="btn btn-primary">Salvar venda</button>
+      <button type="submit" class="btn btn-primary">
+        {% if edicao %}Salvar alterações{% else %}Salvar venda{% endif %}
+      </button>
     </div>
   </form>
 </div>
+
 <script>
   const tipoFrete = document.getElementById('tipo_frete');
   const valorFrete = document.getElementById('valor_frete');
-  tipoFrete.addEventListener('change', () => {
-    const local = tipoFrete.value === 'local_ssa';
-    valorFrete.readOnly = local;
-    if (local) valorFrete.value = '{{ config.TAXA_LOCAL_SSA|default("30", true) }}';
-  });
+  if (tipoFrete && valorFrete) {
+    tipoFrete.addEventListener('change', () => {
+      const local = tipoFrete.value === 'local_ssa';
+      valorFrete.readOnly = local;
+      if (local) valorFrete.value = '{{ config.TAXA_LOCAL_SSA|default("30", true) }}';
+    });
+  }
 </script>
 {% endblock %}

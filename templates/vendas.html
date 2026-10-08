@@ -16,6 +16,7 @@
         <th>Peças</th>
         <th>Valor total</th>
         <th>Status</th>
+        <th>Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -28,9 +29,12 @@
         <td>{{ venda.total_pecas }}</td>
         <td>R$ {{ '%.2f'|format(venda.valor_total) }}</td>
         <td><span class="badge b-vendida">{{ venda.status_venda }}</span></td>
+        <td>
+          <a href="{{ url_for('venda_editar', id=venda.id) }}" class="btn btn-outline">Editar</a>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="7">Nenhuma venda registrada.</td></tr>
+      <tr><td colspan="8">Nenhuma venda registrada.</td></tr>
       {% endfor %}
     </tbody>
   </table>

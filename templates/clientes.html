@@ -13,19 +13,24 @@
         <th>WhatsApp</th>
         <th>Email</th>
         <th>Data de cadastro</th>
-        <th>Vendas</th>
-        <th>Ticket médio</th>
+                <th>Vendas</th>
+        <th>Ações</th>
       </tr>
     </thead>
     <tbody>
-      {% for cliente in clientes %}
+            {% for cliente in clientes %}
       <tr>
         <td>{{ cliente.nome }}</td>
         <td>{{ cliente.whatsapp }}</td>
         <td>{{ cliente.email or '-' }}</td>
         <td>{{ cliente.data_cadastro }}</td>
         <td>{{ cliente.total_vendas }}</td>
-        <td>R$ {{ '%.2f'|format(cliente.ticket_medio) }}</td>
+                <td>
+          <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn btn-outline">Editar</a>
+          <form method="post" action="{{ url_for('deletar_cliente_route', id=cliente.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');">
+            <button type="submit" class="btn btn-danger">Excluir</button>
+          </form>
+        </td>
       </tr>
       {% else %}
       <tr><td colspan="6">Nenhum cliente cadastrado.</td></tr>
