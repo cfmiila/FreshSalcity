@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 30px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+    <h2 style="color: #ff007f; margin-bottom: 20px;">Editar Desapego #{{ desapego.id }}</h2>
+    
+    <form method="POST">
+        <div style="margin-bottom: 15px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Descrição</label>
+            <input type="text" name="descricao" value="{{ desapego.descricao or '' }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Categoria</label>
+                <select name="categoria_id" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                    {% for cat in categorias %}
+                        <option value="{{ cat.id }}" {% if cat.id == desapego.categoria_id %}selected{% endif %}>{{ cat.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Preço Sugerido (R$)</label>
+                <input type="number" step="0.01" name="preco_sugerido" value="{{ desapego.preco_sugerido or 0.0 }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Tamanho</label>
+                <input type="text" name="tamanho" value="{{ desapego.tamanho or '' }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Estado de Conservação</label>
+                <input type="text" name="estado_conservacao" value="{{ desapego.estado_conservacao or '' }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Status da Moderação</label>
+            <select name="status" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+                <option value="em_analise" {% if desapego.status == 'em_analise' %}selected{% endif %}>Em Análise</option>
+                <option value="aprovado" {% if desapego.status == 'aprovado' %}selected{% endif %}>Aprovado</option>
+                <option value="recusado" {% if desapego.status == 'recusado' %}selected{% endif %}>Recusado</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" style="background-color: #ff007f; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; flex: 1;">Salvar Alterações</button>
+            <a href="{{ url_for('admin_desapegos') }}" style="background-color: #6c757d; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; text-align: center; font-weight: bold;">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

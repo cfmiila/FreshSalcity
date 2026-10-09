@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('vitrine') }}" class="btn btn-outline">&#8592; Voltar</a>
+  <h2 class="page-title">Detalhes da Peça</h2>
+</div>
+<div class="cards-row" style="gap:40px;flex-wrap:wrap;">
+  <div class="card" style="min-width:320px;max-width:420px;text-align:center;">
+    {% if peca.foto %}
+    <img src="{{ peca.foto }}" alt="Foto da peça" style="width:100%;max-width:340px;height:260px;object-fit:cover;border-radius:8px;">
+    {% endif %}
+    <div style="margin:12px 0 4px;font-weight:600;font-size:1.18em;color:#FF2D9B;">{{ peca.descricao or 'Peça sem descrição' }}</div>
+    <div class="badge {{ 'b-desconto' if peca.status == 'reservado' else status_badge(peca.status) }}">{{ 'Reservado' if peca.status == 'reservado' else peca.status }}</div>
+    <div style="margin:4px 0;">Categoria: {{ peca.categoria or '-' }}</div>
+    <div style="margin:4px 0;">Tamanho: {{ peca.tamanho or '-' }}</div>
+    <div style="margin:4px 0;">Conservação: {{ peca.estado_conservacao or '-' }}</div>
+    <div style="margin:8px 0 12px; font-size:1.13em;">Preço: <b>R$ {{ '%.2f'|format(peca.preco_venda or 0) }}</b></div>
+    {% if peca.status == 'disponivel' %}
+    <form method="post" action="{{ url_for('reservar_peca', peca_id=peca.id) }}" style="margin-top:10px;display:flex;flex-direction:column;gap:10px;width:100%;">
+      <input type="text" name="cliente_nome" placeholder="Seu nome" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;">
+      <input type="text" name="cliente_whatsapp" placeholder="WhatsApp" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;">
+      <button class="btn btn-primary" type="submit" style="width: 100%;">Reservar peça</button>
+    </form>
+    {% elif peca.status == 'reservado' %}
+    <div class="alert-bar alert-error" style="text-align:center;">Esta peça já foi reservada por outro membro da comunidade</div>
+    {% endif %}
+  </div>
+  <div class="card" style="flex:1;min-width:320px;max-width:500px;">
+    <h3 style="margin-bottom:12px;color:#222;">Perguntas da Comunidade</h3>
+    <form method="post" style="margin-bottom:18px;background:#fafafd;padding:14px 12px;border-radius:10px;display:flex;flex-direction:column;gap:10px;width:100%;">
+      <input type="text" name="autor_nome" placeholder="Seu nome" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;">
+      <input type="text" name="autor_contato" placeholder="Email/Whatsapp (opcional)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;">
+      <textarea name="mensagem" placeholder="Sua dúvida sobre a peça" style="width:100%;height:50px; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box;"></textarea>
+      <button class="btn btn-outline" style="width:100%;" type="submit">Enviar dúvida</button>
+    </form>
+    {% for c in comentarios %}
+    <div class="card" style="margin-bottom:8px;background:#fff8fc;border-left:3px solid #FF2D9B;">
+      <div style="font-size:1.01em;color:#222;font-weight:500;">{{ c.autor_nome|e }} perguntou:</div>
+      <div style="color:#111;">{{ c.mensagem|e }}</div>
+      <div style="color:#888; font-size:.92em;">em {{ c.data_criacao }}</div>
+      {% if c.resposta_admin %}
+        <div style="margin-top:8px;padding:6px 10px;background:#e0ffea;border-radius:4px;color:#14562a;">
+          <b>Resposta do brechó:</b> {{ c.resposta_admin|e }}
+        </div>
+      {% endif %}
+    </div>
+    {% else %}<div style="color:#888;">Nenhuma dúvida ainda. Seja o primeiro!</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -9,11 +9,26 @@
   <title>Fresh SalCity</title>
 </head>
 <body>
+<nav class="topbar-publica" style="display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#fff; border-bottom: 2px solid #FF2D9B;">
+  <div style="display:flex;gap:14px;align-items:center;">
+    <a href="{{ url_for('vitrine') }}" class="nav-link" style="background:#FF2D9B;color:#fff;border-radius:40px;padding:8px 24px;font-weight:600;"> Vitrine Pública</a>
+    <a href="{{ url_for('desapegar') }}" class="nav-link" style="background:#222;color:#fff;border-radius:40px;padding:8px 24px;font-weight:600;">  Desapegar (Colaborativo)</a>
+  </div>
+  <div style="display:flex;gap:16px;align-items:center;font-size:1em;">
+    {% if session.get('usuario_id') %}
+      <span class="nav-link" style="background:#111;color:#fff;border-radius:20px;padding:7px 18px;font-weight:500;">Painel do Brechó</span>
+      <a href="{{ url_for('logout') }}" class="nav-link" style="font-weight:500;">Sair</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="nav-link" style="background:#fff1f9;color:#FF2D9B;border-radius:40px;padding:8px 14px;border:1px solid #FF2D9B;font-weight:600;">Área do Brechó (Login)</a>
+    {% endif %}
+  </div>
+</nav>
+
   {% if request.endpoint != 'login' %}
   <div class="app">
     <aside class="sidebar">
-      <div class="logo">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="Fresh Salcity">
+      <div class="logo" style="padding-top:18px;padding-bottom:14px;text-align:center;background:#131313;">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Fresh SalCity" width="84" style="background:#fff;border-radius:50%;padding:8px;box-shadow:0 2px 12px #2222;">
       </div>
       <nav>
         <a href="/" class="nav-link {{ 'active' if request.endpoint=='dashboard' }}">Dashboard</a>
@@ -21,6 +36,7 @@
         <a href="/clientes" class="nav-link {{ 'active' if request.endpoint=='clientes' or request.endpoint=='cliente_novo' }}">Clientes</a>
         <a href="/vendas" class="nav-link {{ 'active' if request.endpoint=='vendas' or request.endpoint=='venda_nova' or request.endpoint=='troca' or request.endpoint=='trocas_redirect' }}">Vendas</a>
         <a href="/relatorios" class="nav-link {{ 'active' if request.endpoint=='relatorios' }}">Relatórios</a>
+        <a href="/admin/desapegos" class="nav-link {{ 'active' if request.endpoint=='admin_desapegos' }}">Desapegos da Comunidade</a>
         <a href="{{ url_for('logout') }}" class="nav-link">Sair</a>
       </nav>
     </aside>

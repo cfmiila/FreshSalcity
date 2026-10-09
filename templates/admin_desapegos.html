@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Moderação de Desapegos da Comunidade</h2>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>WhatsApp</th>
+        <th>Instagram</th>
+        <th>Descrição</th>
+        <th>Categoria</th>
+        <th>Tipo</th>
+        <th>Preço Sugerido</th>
+        <th>Status</th>
+        <th>Data</th>
+        <th>Foto</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in desapegos %}
+      <tr>
+        <td>{{ d.id }}</td>
+        <td>{{ d.cliente_nome }}</td>
+        <td>{{ d.cliente_whatsapp }}</td>
+        <td>{{ d.cliente_instagram or '-' }}</td>
+        <td>{{ d.descricao or '-' }}</td>
+        <td>{{ d.categoria_nome or '-' }}</td>
+        <td>{{ d.tipo_intent }}</td>
+        <td>R$ {{ '%.2f'|format(d.preco_sugerido or 0) }}</td>
+        <td>{{ d.status }}</td>
+        <td>{{ d.data_envio }}</td>
+        <td>{% if d.foto %}<img src="{{ d.foto }}" style="width:70px;height:70px;object-fit:cover;border-radius:4px;">{% endif %}</td>
+        <td>
+          {% if d.status == 'em_analise' %}
+            <form method="post" action="{{ url_for('admin_aprovar_desapego', id=d.id) }}" style="display:inline-block;">
+              <button type="submit" class="btn btn-primary">Aprovar</button>
+            </form>
+            <form method="post" action="{{ url_for('admin_recusar_desapego', id=d.id) }}" style="display:inline-block;">
+              <button type="submit" class="btn btn-danger">Recusar</button>
+            </form>
+          {% elif d.status == 'aprovado' %}
+            <span class="badge b-disponivel">Aprovado</span>
+          {% elif d.status == 'recusado' %}
+            <span class="badge b-perda">Recusado</span>
+          {% endif %}
+
+          <a href="{{ url_for('admin_editar_desapego', id=d.id) }}" class="btn btn-secondary" style="display:inline-block; margin-left: 5px;">Editar</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="12">Nenhum desapego enviado pela comunidade.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

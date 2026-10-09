@@ -56,6 +56,7 @@ def init_db():
             nome          TEXT NOT NULL,
             whatsapp      TEXT NOT NULL,
             email         TEXT,
+            instagram     TEXT,
             data_cadastro DATE NOT NULL
         );
 
@@ -98,6 +99,7 @@ def init_db():
             ('Casacos'),
             ('Sapatos'),
             ('Acessórios'),
+            ('Bermuda/Shorts'),
             ('Outros');
 
     ''')
@@ -110,6 +112,48 @@ def init_db():
         ('Fresh Sal City', email, senha_hash)
     )
 
+    # --- ÁREA PÚBLICA, MODA CIRCULAR, 3C ---
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS desapegos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cliente_nome TEXT,
+        cliente_whatsapp TEXT,
+        cliente_instagram TEXT,
+        descricao TEXT,
+        categoria_id INTEGER,
+        tamanho TEXT,
+        estado_conservacao TEXT,
+        preco_sugerido REAL,
+        tipo_intent TEXT CHECK(tipo_intent IN ('venda','doacao')) DEFAULT 'doacao',
+        foto TEXT,
+        status TEXT CHECK(status IN ('em_analise','aprovado','recusado')) DEFAULT 'em_analise',
+        data_envio DATE DEFAULT CURRENT_DATE,
+        FOREIGN KEY (categoria_id) REFERENCES categorias(id)
+    );
+    ''')
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS comentarios_pecas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        peca_id INTEGER,
+        autor_nome TEXT,
+        autor_contato TEXT,
+        mensagem TEXT,
+        resposta_admin TEXT,
+        data_criacao DATE DEFAULT CURRENT_DATE,
+        FOREIGN KEY (peca_id) REFERENCES pecas(id)
+    );
+    ''')
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS reservas_pecas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        peca_id INTEGER,
+        cliente_nome TEXT,
+        cliente_whatsapp TEXT,
+        status TEXT CHECK(status IN ('pendente','confirmada','cancelada')) DEFAULT 'pendente',
+        data_reserva DATE DEFAULT CURRENT_DATE,
+        FOREIGN KEY (peca_id) REFERENCES pecas(id)
+    );
+    ''')
     conn.commit()
     conn.close()
     print("Banco criado com sucesso!")

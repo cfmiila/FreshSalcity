@@ -3,6 +3,7 @@ import sqlite3
 from datetime import date, datetime
 from functools import wraps
 from io import BytesIO
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 
 import bcrypt
 from flask import (
@@ -230,7 +231,7 @@ def peca_nova():
     if request.method == 'POST':
         numero = request.form.get('numero_peca') or numero_peca_automatico(db)
         categoria_id = request.form.get('categoria_id')
-        descricao = request.form.get('descricao', '').strip()
+        descricao = request.form.get('descricao', '').strip() or None
         marca = request.form.get('marca', '').strip()
         cor = request.form.get('cor', '').strip()
         tamanho = request.form.get('tamanho', '').strip()
@@ -280,7 +281,7 @@ def peca_editar(peca_id):
     if request.method == 'POST':
         numero = request.form.get('numero_peca') or peca['numero_peca']
         categoria_id = request.form.get('categoria_id')
-        descricao = request.form.get('descricao', '').strip()
+        descricao = request.form.get('descricao', '').strip() or None
         marca = request.form.get('marca', '').strip()
         cor = request.form.get('cor', '').strip()
         tamanho = request.form.get('tamanho', '').strip()
@@ -323,16 +324,16 @@ def clientes():
     db = get_db()
     clientes_lista = db.execute(
         '''
-        SELECT c.*,
-            (
-                SELECT COUNT(*)
-                FROM vendas v
-                JOIN itens_venda iv ON iv.venda_id = v.id
-                JOIN pecas p ON p.id = iv.peca_id
-                WHERE v.cliente_id = c.id
-                AND p.status = 'vendida'
-            ) AS total_vendas
+        SELECT 
+            c.*,
+            COUNT(v.id) AS total_vendas,
+            COALESCE(SUM(
+                (SELECT COALESCE(SUM(iv.preco_vendido), 0) FROM itens_venda iv WHERE iv.venda_id = v.id) + COALESCE(v.valor_frete, 0)
+            ), 0) AS gasto_total,
+            MAX(v.data_venda) AS ultima_compra
         FROM clientes c
+        LEFT JOIN vendas v ON c.id = v.cliente_id AND v.status_venda != 'cancelada'
+        GROUP BY c.id
         ORDER BY c.nome ASC
         '''
     ).fetchall()
@@ -480,7 +481,24 @@ def venda_nova():
                 "UPDATE pecas SET status = 'vendida', data_venda = ? WHERE id = ?",
                 (data_venda, int(peca_id)),
             )
+        # Calcule valor dos itens (peças vendidas nesta venda)
+        valor_itens = 0.0
+        for peca_id in pecas_selecionadas:
+            preco = float(request.form.get(f'preco_{peca_id}', 0))
+            valor_itens += preco
 
+        valor_total_venda = valor_itens + valor_frete
+        db.execute(
+            '''
+            UPDATE clientes
+            SET
+                total_compras = COALESCE(total_compras, 0) + 1,
+                valor_total_gasto = COALESCE(valor_total_gasto, 0) + ?,
+                ultima_compra = ?
+            WHERE id = ?
+            ''',
+            (valor_total_venda, data_venda, int(cliente_id))
+        )
         db.commit()
         return redirect(url_for('vendas'))
 
@@ -630,8 +648,231 @@ def handle_exception(e):
     print('Erro interno:', traceback.format_exc())
     flash('Erro interno inesperado. Tente novamente e, se persistir, contate o suporte.', 'error')
     return render_template('erro.html', erro='Erro interno.'), 500
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'logo.png',
+        mimetype='image/png'
+    )
+
+# ======================
+# ÁREA PÚBLICA/COMUNIDADE FRESHSALCITY
+# ======================
+
+@app.route("/vitrine")
+def vitrine():
+    db = get_db()
+    categorias = db.execute('SELECT * FROM categorias ORDER BY nome').fetchall()
+    filtro_categoria = request.args.get('categoria', '')
+    termo = request.args.get('q', '').strip()
+    query = "SELECT p.*, c.nome as categoria_nome FROM pecas p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.status='disponivel'"
+    params = []
+    if filtro_categoria:
+        query += " AND p.categoria_id = ?"
+        params.append(filtro_categoria)
+    if termo:
+        query += " AND (p.descricao LIKE ? OR p.marca LIKE ?)"
+        params.extend([f"%{termo}%", f"%{termo}%"])
+    query += " ORDER BY p.data_entrada DESC"
+    pecas = db.execute(query, params).fetchall()
+    return render_template("vitrine.html", pecas=pecas, categorias=categorias, filtro_categoria=filtro_categoria, busca=termo)
+
+@app.route("/vitrine/produto/<int:peca_id>", methods=["GET", "POST"])
+def produto_detalhe(peca_id):
+    db = get_db()
+    peca = db.execute("SELECT p.*, c.nome as categoria FROM pecas p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.id=?", (peca_id,)).fetchone()
+    comentarios = db.execute("SELECT * FROM comentarios_pecas WHERE peca_id=? ORDER BY data_criacao DESC", (peca_id,)).fetchall()
+    if request.method == "POST":
+        autor_nome = request.form.get("autor_nome", "").strip()
+        autor_contato = request.form.get("autor_contato", "").strip()
+        mensagem = request.form.get("mensagem", "").strip()
+        if autor_nome and mensagem:
+            db.execute("INSERT INTO comentarios_pecas (peca_id, autor_nome, autor_contato, mensagem) VALUES (?, ?, ?, ?)",
+                       (peca_id, autor_nome, autor_contato, mensagem))
+            db.commit()
+            flash("Comentário enviado!", "success")
+        return redirect(request.url)
+    return render_template("produto_detalhe.html", peca=peca, comentarios=comentarios)
+
+@app.route("/vitrine/reservar/<int:peca_id>", methods=["POST"])
+def reservar_peca(peca_id):
+    db = get_db()
+    nome = request.form.get("cliente_nome", "").strip()
+    whatsapp = request.form.get("cliente_whatsapp", "").strip()
+    if not nome or not whatsapp:
+        flash("Preencha nome e WhatsApp para reservar.", "error")
+        return redirect(url_for("produto_detalhe", peca_id=peca_id))
+    db.execute("INSERT INTO reservas_pecas (peca_id, cliente_nome, cliente_whatsapp) VALUES (?, ?, ?)",
+               (peca_id, nome, whatsapp))
+    db.execute("UPDATE pecas SET status='reservado' WHERE id=?", (peca_id,))
+    db.commit()
+    flash("Reserva registrada! Aguarde nosso contato.", "success")
+    return redirect(url_for("produto_detalhe", peca_id=peca_id))
+
+@app.route("/desapegar", methods=["GET", "POST"])
+def desapegar():
+    db = get_db()
+    categorias = db.execute("SELECT * FROM categorias ORDER BY nome").fetchall()
+    if request.method == "POST":
+        nome = request.form.get("cliente_nome", "").strip()
+        whatsapp = request.form.get("cliente_whatsapp", "").strip()
+        instagram = request.form.get("cliente_instagram", "").strip()
+        descricao = request.form.get("descricao", "").strip()
+        categoria_id = request.form.get("categoria_id")
+        tamanho = request.form.get("tamanho", "").strip()
+        estado_conservacao = request.form.get("estado_conservacao", "").strip()
+        preco_sugerido = request.form.get("preco_sugerido", "") or None
+        tipo_intent = request.form.get("tipo_intent", "doacao")
+        foto = None
+        arquivo_foto = request.files.get("foto")
+        if arquivo_foto and arquivo_foto.filename:
+            from werkzeug.utils import secure_filename
+            filename = secure_filename(arquivo_foto.filename)
+            path = os.path.join("static/uploads", filename)
+            arquivo_foto.save(path)
+            foto = f"/static/uploads/{filename}"
+        db.execute("""
+            INSERT INTO desapegos
+            (cliente_nome, cliente_whatsapp, cliente_instagram, descricao, categoria_id, tamanho, estado_conservacao,
+            preco_sugerido, tipo_intent, foto, status, data_envio)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'em_analise', date('now'))
+        """, (nome, whatsapp, instagram, descricao, categoria_id, tamanho, estado_conservacao, preco_sugerido, tipo_intent, foto))
+        db.commit()
+        flash("Seu desapego foi enviado para análise!", "success")
+        return redirect(url_for("desapegar"))
+    return render_template("desapegar_form.html", categorias=categorias)
+
+# ======================
+# MODERAÇÃO (ADMIN) - PROTEGIDO
+# ======================
+@app.route("/admin/desapegos")
+@login_required
+def admin_desapegos():
+    db = get_db()
+    desapegos = db.execute("SELECT d.*, c.nome AS categoria_nome FROM desapegos d LEFT JOIN categorias c ON c.id = d.categoria_id ORDER BY d.data_envio DESC").fetchall()
+    return render_template("admin_desapegos.html", desapegos=desapegos)
+
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route("/admin/desapegos/aprovar/<int:id>", methods=["POST"])
+@login_required
+def admin_aprovar_desapego(id):
+    db = get_db()
+    desapego = db.execute("SELECT * FROM desapegos WHERE id=?", (id,)).fetchone()
+    if desapego:
+        # FOTO - limpeza robusta para TODOS os casos
+        foto_nome = (desapego['foto'] or '').replace('\\', '/').replace('//','/').strip()
+        # Remove TODOS os static/ do começo
+        while foto_nome.startswith('static/'):
+            foto_nome = foto_nome[7:]
+        foto_nome = foto_nome.lstrip('/')
+        if foto_nome and not foto_nome.startswith('uploads/'):
+            foto_nome = f'uploads/{foto_nome}'
+
+        # CATEGORIA - pega primeira válida se nulo/vazio
+        cat_id = desapego['categoria_id']
+        if not cat_id or str(cat_id).strip() == '' or cat_id == 'None':
+            cat_row = db.execute("SELECT id FROM categorias ORDER BY id ASC LIMIT 1").fetchone()
+            cat_id = cat_row['id'] if cat_row else 1
+
+        preco = float(desapego['preco_sugerido'] or 0.0)
+        tamanho = desapego['tamanho'] or 'Único'
+        estado = desapego['estado_conservacao'] or 'Usado'
+
+        numero_peca = f"DSP-{desapego['id']}"
+        db.execute("""
+            INSERT INTO pecas 
+            (numero_peca, categoria_id, descricao, marca, cor, tamanho, estado_conservacao, preco_custo, preco_venda, status, foto, observacoes, data_entrada)
+            VALUES (?, ?, ?, 'Desapego', 'Diversas', ?, ?, 0.0, ?, 'disponivel', ?, 'Desapego aprovado', date('now'))
+        """, (
+            numero_peca,
+            cat_id,
+            desapego['descricao'] or 'Peça de Desapego',
+            tamanho,
+            estado,
+            preco,
+            foto_nome
+        ))
+        db.execute("UPDATE desapegos SET status='aprovado' WHERE id=?", (id,))
+        db.commit()
+        flash('Desapego aprovado e adicionado à Vitrine!', 'success')
+    return redirect(url_for('admin_desapegos'))
+
+@app.route('/admin/desapegos/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def admin_editar_desapego(id):
+    db = get_db()
+    
+    if request.method == 'POST':
+        descricao = request.form.get('descricao')
+        preco_sugerido = request.form.get('preco_sugerido')
+        tamanho = request.form.get('tamanho')
+        estado_conservacao = request.form.get('estado_conservacao')
+        status = request.form.get('status')
+        categoria_id = request.form.get('categoria_id')
+        
+        # Converte preço em branco para None/0
+        preco_val = float(preco_sugerido) if preco_sugerido and preco_sugerido.strip() else 0.0
+
+        db.execute('''
+            UPDATE desapegos 
+            SET descricao = ?, preco_sugerido = ?, tamanho = ?, estado_conservacao = ?, status = ?, categoria_id = ?
+            WHERE id = ?
+        ''', (descricao, preco_val, tamanho, estado_conservacao, status, categoria_id, id))
+        db.commit()
+        
+        flash('Desapego atualizado com sucesso!', 'success')
+        return redirect(url_for('admin_desapegos'))
+
+    desapego = db.execute('SELECT * FROM desapegos WHERE id = ?', (id,)).fetchone()
+    categorias = db.execute('SELECT * FROM categorias').fetchall()
+    
+    if not desapego:
+        flash('Desapego não encontrado.', 'danger')
+        return redirect(url_for('admin_desapegos'))
+        
+    return render_template('admin_desapego_editar.html', desapego=desapego, categorias=categorias)
+@app.route("/admin/desapegos/recusar/<int:id>", methods=["POST"])
+@login_required
+def admin_recusar_desapego(id):
+    db = get_db()
+    db.execute("UPDATE desapegos SET status='recusado' WHERE id=?", (id,))
+    db.commit()
+    flash('Desapego recusado.', 'info')
+    return redirect(url_for('admin_desapegos'))
+
+@app.route("/admin/comentarios/responder/<int:id>", methods=["POST"])
+@login_required
+def admin_responder_comentario(id):
+    resposta = request.form.get("resposta_admin", "").strip()
+    db = get_db()
+    db.execute("UPDATE comentarios_pecas SET resposta_admin = ? WHERE id = ?", (resposta, id))
+    db.commit()
+    flash("Resposta enviada!", "success")
+    return redirect(request.referrer or url_for("dashboard"))
+
+@app.context_processor
+
+def utility_processor():
+    def resolve_foto(foto):
+        if not foto:
+            return None
+        foto = str(foto).replace('\\', '/').strip()
+        # Se já for URL externa
+        if foto.startswith('http://') or foto.startswith('https://'):
+            return foto
+        # Remove prefixos 'static/' duplicados
+        while foto.startswith('static/'):
+            foto = foto[7:]
+        # Remove barras à esquerda
+        foto = foto.lstrip('/')
+        return url_for('static', filename=foto)
+    return dict(resolve_foto=resolve_foto)
 
 if __name__ == '__main__':
     init_db()
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
+

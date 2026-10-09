@@ -9,11 +9,14 @@
   <table>
     <thead>
       <tr>
-        <th>Nome</th>
+                <th>Nome</th>
         <th>WhatsApp</th>
         <th>Email</th>
+        <th>Instagram</th>
         <th>Data de cadastro</th>
-                <th>Vendas</th>
+        <th>Compras</th>
+        <th>Gasto Total</th>
+        <th>Última compra</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -22,10 +25,13 @@
       <tr>
         <td>{{ cliente.nome }}</td>
         <td>{{ cliente.whatsapp }}</td>
-        <td>{{ cliente.email or '-' }}</td>
+                <td>{{ cliente.email or '-' }}</td>
+        <td>{{ cliente.instagram or '-' }}</td>
         <td>{{ cliente.data_cadastro }}</td>
-        <td>{{ cliente.total_vendas }}</td>
-                <td>
+        <td>{{ cliente.total_vendas or 0 }}</td>
+        <td>R$ {{ '%.2f'|format(cliente.gasto_total or 0) }}</td>
+        <td>{{ cliente.ultima_compra or '-' }}</td>
+        <td>
           <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn btn-outline">Editar</a>
           <form method="post" action="{{ url_for('deletar_cliente_route', id=cliente.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cliente?');">
             <button type="submit" class="btn btn-danger">Excluir</button>
@@ -33,7 +39,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="6">Nenhum cliente cadastrado.</td></tr>
+      <tr><td colspan="11">Nenhum cliente cadastrado.</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header" style="margin-bottom:16px;">
+  <h2 class="page-title">Vitrine Circular</h2>
+  <form method="get" class="search-bar" style="flex:1;margin-left:24px;max-width:420px;">
+    <input type="text" name="q" value="{{ busca }}" placeholder="Buscar peça, marca ou categoria...">
+    <select name="categoria" style="min-width:120px;">
+      <option value="">Todas categorias</option>
+      {% for categoria in categorias %}
+      <option value="{{ categoria.id }}" {% if filtro_categoria == categoria.id|string %}selected{% endif %}>{{ categoria.nome }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+  </form>
+</div>
+
+<div class="cards-row" style="flex-wrap:wrap; gap:32px;">
+{% for peca in pecas %}
+  <div class="card" style="flex:0 1 250px; max-width:270px; min-height:380px; border:1px solid #FFD6EE; box-shadow:none;">
+    {% if peca.foto %}
+    {% set foto_limpa = peca.foto.replace('static/', '').replace('static\\', '').replace('uploads//','uploads/').replace('//','/') %}
+    {% set foto_limpa = foto_limpa.lstrip('/') %}
+    {% if foto_limpa.startswith('http') %}
+        <img src="{{ foto_limpa }}" alt="{{ peca.descricao }}" style="width:100%;height:210px;object-fit:cover;border-radius:8px;">
+    {% elif foto_limpa.startswith('uploads/') or foto_limpa.startswith('fotos/') %}
+        <img src="{{ url_for('static', filename=foto_limpa) }}" alt="{{ peca.descricao }}" style="width:100%;height:210px;object-fit:cover;border-radius:8px;">
+    {% else %}
+        <img src="{{ url_for('static', filename='uploads/' + foto_limpa) }}" alt="{{ peca.descricao }}" style="width:100%;height:210px;object-fit:cover;border-radius:8px;">
+    {% endif %}
+{% else %}
+    <div style="width:100%;height:210px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#888;">Sem Foto</div>
+{% endif %}
+    <h4 style="margin:8px 0 6px;font-size:1.10em;color:#222;font-weight:600;">{{ peca.descricao or '(Sem descrição)' }}</h4>
+    <div class="badge {{ status_badge(peca.status) }}">{{ peca.status }}</div>
+    <div style="margin:4px 0;color:#888;font-size:.98em;">Categoria: {{ peca.categoria_nome or peca.categoria or 'Geral' }}</div>
+    <div style="margin:4px 0;color:#888;font-size:.98em;">Tamanho: {{ peca.tamanho or '-' }}</div>
+    <div style="margin:4px 0 8px;color:#e72f7b;font-size:1.16em;font-weight:700;">R$ {{ '%.2f'|format(peca.preco_venda or 0) }}</div>
+    <a href="{{ url_for('produto_detalhe', peca_id=peca.id) }}" class="btn" style="background:#e72f7b;color:#fff;display:block;width:100%;margin-top:2px;">Ver detalhes</a>
+  </div>
+{% else %}
+  <p style="color:#333;font-size:18px;">Nenhuma peça disponível agora na comunidade. Que tal <a href="{{ url_for('desapegar') }}">desapegar de algo?</a></p>
+{% endfor %}
+</div>
+{% endblock %}

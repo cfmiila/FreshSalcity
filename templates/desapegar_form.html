@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .desapegar-wrap {
+    max-width: 700px; margin: 2rem auto;
+  }
+  .desapegar-card {
+    background: #fff; box-shadow: 0 2px 8px #0001; border-radius: 12px; padding: 2rem;
+  }
+  .desapegar-card h2 { margin-top: 0; font-size: 2rem; font-weight: bold; color:#FF2D9B; text-align: center; }
+  .desapegar-card .sub {
+    text-align: center;
+    font-size: 1.08rem;
+    margin-bottom: 1.8rem;
+    color: #555;
+    font-weight: 500;
+  }
+  .desapegar-form .form-group {
+    margin-bottom: 1.1rem;
+  }
+  .desapegar-form input,
+  .desapegar-form select,
+  .desapegar-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 100%;
+    border-radius: 7px;
+    border: 1px solid #bbb;
+    padding: 0.45rem 0.7rem;
+    font-size: 1.04rem;
+    margin-top: .3rem;
+    outline: none;
+    transition: border 0.18s;
+  }
+  .desapegar-form input:focus,
+  .desapegar-form select:focus,
+  .desapegar-form textarea:focus {
+    border-color: #FFA9E7;
+  }
+  .desapegar-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem 1.8rem;
+  }
+  .desapegar-form .form-group {
+    display: flex; flex-direction: column;
+  }
+  @media (max-width: 650px) {
+    .desapegar-form {
+      grid-template-columns: 1fr;
+      gap: 1.1rem 0.8rem;
+    }
+  }
+  .desapegar-submit-btn {
+    display: block;
+    width: 100%;
+    margin: 2rem 0 0 0;
+    padding: 0.9rem 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    background: linear-gradient(90deg,#FF2D9B,#FFA9E7);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 0 0 #0000;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background .2s;
+  }
+  .desapegar-submit-btn:hover { background: linear-gradient(90deg,#FF2D9B,#FFA9E7); }
+</style>
+<div class="desapegar-wrap">
+  <div class="desapegar-card">
+    <h2>Desapegue com o FreshSalCity</h2>
+    <div class="sub">Tem roupas paradas no armário? Envie para venda ou doação e faça parte da moda circular!</div>
+    <form class="desapegar-form" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="cliente_nome">Seu nome</label>
+        <input type="text" id="cliente_nome" name="cliente_nome">
+      </div>
+      <div class="form-group">
+        <label for="cliente_whatsapp">WhatsApp</label>
+        <input type="text" id="cliente_whatsapp" name="cliente_whatsapp">
+      </div>
+      <div class="form-group">
+        <label for="cliente_instagram">Instagram</label>
+        <input type="text" id="cliente_instagram" name="cliente_instagram">
+      </div>
+      <div class="form-group">
+        <label for="descricao">Descrição da peça</label>
+        <input type="text" id="descricao" name="descricao">
+      </div>
+      <div class="form-group">
+        <label for="categoria_id">Categoria</label>
+        <select id="categoria_id" name="categoria_id">
+          <option value="">Selecione</option>
+          {% for categoria in categorias %}
+          <option value="{{ categoria.id }}">{{ categoria.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="tamanho">Tamanho</label>
+        <input type="text" id="tamanho" name="tamanho">
+      </div>
+      <div class="form-group">
+        <label for="estado_conservacao">Estado de conservação</label>
+        <input type="text" id="estado_conservacao" name="estado_conservacao">
+      </div>
+      <div class="form-group">
+        <label for="preco_sugerido">Preço sugerido</label>
+        <input type="number" step="0.01" id="preco_sugerido" name="preco_sugerido">
+      </div>
+      <div class="form-group">
+        <label for="tipo_intent">Tipo</label>
+        <select id="tipo_intent" name="tipo_intent">
+          <option value="venda">Venda</option>
+          <option value="doacao">Doação</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="foto">Foto da peça</label>
+        <input type="file" id="foto" name="foto" accept="image/*">
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <button class="desapegar-submit-btn" type="submit">Enviar desapego</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
